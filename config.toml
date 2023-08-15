@@ -1,0 +1,5 @@
+imap = "http://imap.gmail.com"
+imap_user = "user"
+imap_password = "password"
+imap_port = "993"
+imap_ssl = false
