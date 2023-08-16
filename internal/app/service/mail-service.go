@@ -23,6 +23,8 @@ func (ms *MailService) GetList(page int) ([]models.MailModel, error) {
 	for _, row := range res {
 		items = append(items, models.MailModel{
 			MessageId: row.MessageId,
+			Uid:       row.Uid,
+			SeqNum:    row.SeqNum,
 			From:      row.From,
 			Subject:   row.Subject,
 			Date:      row.Date,

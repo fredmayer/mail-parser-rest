@@ -80,13 +80,20 @@ func (mr *MailReader) List(page int) []ListMailDto {
 			from = msg.Envelope.From[f].Address()
 			i++
 		}
+		log.Println(msg.Uid)
 
 		res = append(res, ListMailDto{
 			MessageId: msg.Envelope.MessageId,
 			From:      from,
 			Subject:   msg.Envelope.Subject,
 			Date:      msg.Envelope.Date,
+			Uid:       msg.Uid,
+			SeqNum:    msg.SeqNum,
 		})
+	}
+
+	if err := <-done; err != nil {
+		log.Fatal(err)
 	}
 
 	return res
