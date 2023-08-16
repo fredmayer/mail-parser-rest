@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/fredmayer/mail-parser-rest/internal/configs"
+	"github.com/fredmayer/mail-parser-rest/internal/modules/mail"
 )
 
 var (
@@ -22,4 +23,7 @@ func main() {
 
 	config := configs.NewConfig(configPath)
 	fmt.Println(config)
+
+	m := mail.Dial()
+	_ = m.List(1)
 }

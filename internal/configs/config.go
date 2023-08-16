@@ -14,13 +14,20 @@ type Config struct {
 	ImapSsl      bool   `toml:"imap_ssl"`
 }
 
+var (
+	config Config
+)
+
 func NewConfig(path string) *Config {
-	c := &Config{}
 	path = "../../" + path
-	_, err := toml.DecodeFile(path, c)
+	_, err := toml.DecodeFile(path, &config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return c
+	return &config
+}
+
+func Get() *Config {
+	return &config
 }
