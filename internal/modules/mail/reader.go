@@ -60,16 +60,18 @@ func (mr *MailReader) List(page int) []ListMailDto {
 
 	from := uint32((page-1)*perPage + 1)
 	to := uint32(page * perPage)
+	log.Printf("Page %d from %d to %d", page, from, to)
 
 	messages := make(chan *imap.Message, 10)
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(from, to)
+
 	done := make(chan error, 1)
 	go func() {
 		done <- mr.Cl.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
 	}()
 
-	res := make([]ListMailDto, 10)
+	res := make([]ListMailDto, 0, 10)
 	for msg := range messages {
 		i := 0
 		from := ""
