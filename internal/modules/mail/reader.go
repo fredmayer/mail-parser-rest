@@ -1,7 +1,9 @@
 package mail
 
 import (
+	"errors"
 	"log"
+	"math"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -42,7 +44,7 @@ func Get() *MailReader {
 	return &mc
 }
 
-func (mr *MailReader) List(page int) []ListMailDto {
+func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 	perPage := 10
 	if page == 0 {
 		page = 1
@@ -60,9 +62,15 @@ func (mr *MailReader) List(page int) []ListMailDto {
 
 	from := uint32((page-1)*perPage + 1)
 	to := uint32(page * perPage)
-	log.Printf("Page %d from %d to %d", page, from, to)
+	//log.Printf("Page %d from %d to %d", page, from, to)
 
 	messages := make(chan *imap.Message, 10)
+	pages := math.Ceil(float64(mbox.Messages) / float64(perPage))
+
+	if page > int(pages) {
+		return nil, errors.New("Not found")
+	}
+
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(from, to)
 
@@ -80,7 +88,7 @@ func (mr *MailReader) List(page int) []ListMailDto {
 			from = msg.Envelope.From[f].Address()
 			i++
 		}
-		log.Println(msg.Uid)
+		//log.Println(msg.Uid)
 
 		res = append(res, ListMailDto{
 			MessageId: msg.Envelope.MessageId,
@@ -96,5 +104,10 @@ func (mr *MailReader) List(page int) []ListMailDto {
 		log.Fatal(err)
 	}
 
-	return res
+	r := &ListMailResponse{
+		Data:  res,
+		Pages: int(pages),
+	}
+
+	return r, nil
 }

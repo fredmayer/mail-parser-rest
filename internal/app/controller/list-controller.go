@@ -32,7 +32,7 @@ func (lc *ListController) GetList(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	res, err := lc.service.MailService.GetList(rq.Page)
+	res, err := lc.service.MailService.GetList(rq.Page, ctx)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,8 +1,11 @@
 package service
 
 import (
+	"strconv"
+
 	"github.com/fredmayer/mail-parser-rest/internal/app/models"
 	"github.com/fredmayer/mail-parser-rest/internal/modules/mail"
+	"github.com/labstack/echo/v4"
 )
 
 type MailService struct {
@@ -16,11 +19,14 @@ func NewMailService() *MailService {
 	}
 }
 
-func (ms *MailService) GetList(page int) ([]models.MailModel, error) {
-	res := ms.mail.List(page)
+func (ms *MailService) GetList(page int, ctx echo.Context) ([]models.MailModel, error) {
+	res, err := ms.mail.List(page)
+	if err != nil {
+		return nil, err
+	}
 
 	var items []models.MailModel
-	for _, row := range res {
+	for _, row := range res.Data {
 		items = append(items, models.MailModel{
 			MessageId: row.MessageId,
 			Uid:       row.Uid,
@@ -30,6 +36,8 @@ func (ms *MailService) GetList(page int) ([]models.MailModel, error) {
 			Date:      row.Date,
 		})
 	}
+
+	ctx.Response().Writer.Header().Set("X-Pagination-Page-Count", strconv.Itoa(res.Pages))
 
 	return items, nil
 }

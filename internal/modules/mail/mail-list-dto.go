@@ -10,3 +10,8 @@ type ListMailDto struct {
 	Subject   string
 	Date      time.Time
 }
+
+type ListMailResponse struct {
+	Data  []ListMailDto
+	Pages int
+}
