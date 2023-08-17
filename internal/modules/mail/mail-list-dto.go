@@ -2,16 +2,22 @@ package mail
 
 import "time"
 
-type ListMailDto struct {
-	MessageId string
-	Uid       uint32
-	SeqNum    uint32
-	From      string
-	Subject   string
-	Date      time.Time
+type MailDto struct {
+	MessageId   string
+	Uid         uint32
+	SeqNum      uint32
+	From        string
+	Subject     string
+	Date        time.Time
+	Attachments []MailAttachmentDto
+}
+
+type MailAttachmentDto struct {
+	Mime string
+	Name string
 }
 
 type ListMailResponse struct {
-	Data  []ListMailDto
+	Data  []MailDto
 	Pages int
 }

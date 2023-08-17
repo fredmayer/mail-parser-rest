@@ -3,6 +3,7 @@ package service
 import (
 	"strconv"
 
+	"github.com/VictorRibeiroLima/converter"
 	"github.com/fredmayer/mail-parser-rest/internal/app/models"
 	"github.com/fredmayer/mail-parser-rest/internal/modules/mail"
 	"github.com/labstack/echo/v4"
@@ -17,6 +18,28 @@ func NewMailService() *MailService {
 	return &MailService{
 		mail: mail.Get(),
 	}
+}
+
+func (ms *MailService) GetView(sid int, ctx echo.Context) (*models.MailModel, error) {
+	message, err := ms.mail.GetBySid(sid)
+	if err != nil {
+		return nil, err
+	}
+
+	at := []models.MailAttachmentModel{}
+	converter.Convert(&at, message.Attachments)
+
+	res := models.MailModel{
+		MessageId:   message.MessageId,
+		Uid:         message.Uid,
+		SeqNum:      message.SeqNum,
+		From:        message.From,
+		Subject:     message.Subject,
+		Date:        message.Date,
+		Attachments: at,
+	}
+
+	return &res, nil
 }
 
 func (ms *MailService) GetList(page int, ctx echo.Context) ([]models.MailModel, error) {

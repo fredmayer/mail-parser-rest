@@ -6,8 +6,11 @@ require github.com/emersion/go-imap v1.2.1
 
 require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/VictorRibeiroLima/converter v0.1.3 // indirect
 	github.com/emersion/go-imap/v2 v2.0.0-alpha.6 // indirect
+	github.com/emersion/go-message v0.16.0 // indirect
 	github.com/emersion/go-sasl v0.0.0-20220912192320-0145f2c60ead // indirect
+	github.com/emersion/go-textwrapper v0.0.0-20200911093747-65d896831594 // indirect
 	github.com/labstack/echo/v4 v4.11.1 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

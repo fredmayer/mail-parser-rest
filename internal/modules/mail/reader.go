@@ -44,6 +44,66 @@ func Get() *MailReader {
 	return &mc
 }
 
+// view message by sid
+func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
+	mbox, err := mr.Cl.Select("INBOX", false)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if mbox.Messages == 0 {
+		log.Println("No messages in mailbox")
+		//return nil
+	}
+
+	seqset := new(imap.SeqSet)
+	seqset.AddNum(uint32(sid))
+
+	messages := make(chan *imap.Message, 10)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- mr.Cl.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchBodyStructure, imap.FetchUid}, messages)
+	}()
+
+	msg := <-messages
+
+	from, err := mc.getFirstAddress(msg.Envelope.From)
+	if err != nil {
+		from = "not setted"
+	}
+	mailDto := MailDto{
+		MessageId: msg.Envelope.MessageId,
+		Uid:       msg.Uid,
+		SeqNum:    msg.SeqNum,
+		From:      from,
+		Subject:   msg.Envelope.Subject,
+		Date:      msg.Envelope.Date,
+	}
+
+	attachments := []MailAttachmentDto{}
+	for _, part := range msg.BodyStructure.Parts {
+		fname, err := part.Filename()
+		if err != nil || len(fname) == 0 {
+			continue
+		}
+
+		attachments = append(attachments, MailAttachmentDto{
+			Mime: part.MIMEType + "/" + part.MIMESubType,
+			Name: fname,
+		})
+	}
+
+	mailDto.Attachments = attachments
+
+	if err := <-done; err != nil {
+		//Todo add normal error 404
+		log.Fatal(err)
+	}
+
+	return &mailDto, nil
+}
+
+// List of emails
 func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 	perPage := 10
 	if page == 0 {
@@ -76,21 +136,18 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- mr.Cl.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
+		done <- mr.Cl.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchUid}, messages)
 	}()
 
-	res := make([]ListMailDto, 0, 10)
+	res := make([]MailDto, 0, 10)
 	for msg := range messages {
-		i := 0
-		from := ""
-		for f := range msg.Envelope.From {
-			//fr[i] = f.MailboxName
-			from = msg.Envelope.From[f].Address()
-			i++
+		from, err := mc.getFirstAddress(msg.Envelope.From)
+		if err != nil {
+			from = "not setted"
 		}
 		//log.Println(msg.Uid)
 
-		res = append(res, ListMailDto{
+		res = append(res, MailDto{
 			MessageId: msg.Envelope.MessageId,
 			From:      from,
 			Subject:   msg.Envelope.Subject,
@@ -110,4 +167,11 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 	}
 
 	return r, nil
+}
+
+func (mr *MailReader) getFirstAddress(froms []*imap.Address) (string, error) {
+	if len(froms) == 0 {
+		return "", errors.New("Not found froms e-mail adresses")
+	}
+	return froms[0].Address(), nil
 }

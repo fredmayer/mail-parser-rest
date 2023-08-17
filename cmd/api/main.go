@@ -46,7 +46,8 @@ func main() {
 	listController := controller.NewListController(ctx, serviceManager)
 
 	//Routes
-	e.GET("list", listController.GetList)
+	e.GET("/list", listController.GetList)
+	e.GET("/view/:sid", listController.GetView)
 
 	// Start server
 	s := &http.Server{
