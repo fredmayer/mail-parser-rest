@@ -13,6 +13,7 @@ type MailModel struct {
 }
 
 type MailAttachmentModel struct {
-	Mime string `json:"MIME"`
-	Name string `json:"name"`
+	Mime  string `json:"MIME"`
+	Name  string `json:"name"`
+	Index int    `json:"index"`
 }

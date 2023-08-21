@@ -1,10 +1,12 @@
 package service
 
 import (
+	"io"
 	"strconv"
 
 	"github.com/VictorRibeiroLima/converter"
 	"github.com/fredmayer/mail-parser-rest/internal/app/models"
+	"github.com/fredmayer/mail-parser-rest/internal/app/types"
 	"github.com/fredmayer/mail-parser-rest/internal/modules/mail"
 	"github.com/labstack/echo/v4"
 )
@@ -20,8 +22,17 @@ func NewMailService() *MailService {
 	}
 }
 
-func (ms *MailService) GetView(sid int, ctx echo.Context) (*models.MailModel, error) {
-	message, err := ms.mail.GetBySid(sid)
+func (ms *MailService) DownloadAttachment(uid int, params types.AttachmentRequest, cxt echo.Context) (io.Reader, error) {
+	reader, err := ms.mail.DownloadAttachment(uid, params.Mime, params.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return reader, err
+}
+
+func (ms *MailService) GetView(uid int, ctx echo.Context) (*models.MailModel, error) {
+	message, err := ms.mail.GetBySid(uid)
 	if err != nil {
 		return nil, err
 	}

@@ -2,11 +2,13 @@ package mail
 
 import (
 	"errors"
+	"io"
 	"log"
 	"math"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
+	"github.com/emersion/go-message"
 	"github.com/fredmayer/mail-parser-rest/internal/configs"
 )
 
@@ -44,6 +46,75 @@ func Get() *MailReader {
 	return &mc
 }
 
+func (mr *MailReader) DownloadAttachment(uid int, mime string, name string) (io.Reader, error) {
+	mbox, err := mr.Cl.Select("INBOX", false)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if mbox.Messages == 0 {
+		log.Println("No messages in mailbox")
+		//todo return error
+	}
+
+	seqset := new(imap.SeqSet)
+	seqset.AddNum(uint32(uid))
+
+	messages := make(chan *imap.Message, 10)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- mr.Cl.UidFetch(seqset, []imap.FetchItem{imap.FetchRFC822, imap.FetchEnvelope}, messages)
+	}()
+
+	msg := <-messages
+
+	for i, r := range msg.Body {
+		log.Println(i)
+		entity, err := message.Read(r)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		multipartReader := entity.MultipartReader()
+		for e, err := multipartReader.NextPart(); err != io.EOF; e, err = multipartReader.NextPart() {
+			kind, params, cErr := e.Header.ContentType()
+			if cErr != nil {
+				log.Fatal(cErr)
+			}
+
+			nameAt, ok := params["name"]
+			if ok {
+				if kind == mime && nameAt == name {
+					return e.Body, nil
+				}
+			}
+
+			log.Printf("Type of %v", kind)
+			log.Printf("Params %v", params)
+
+			//e.Body
+
+			// if kind != "image/png" && kind != "image/gif" {
+			// 	continue
+			// }
+
+			// c, rErr := ioutil.ReadAll(e.Body)
+			// if rErr != nil {
+			// 	log.Fatal(rErr)
+			// }
+
+			// log.Printf("Dump file %s", params["name"])
+
+			// if fErr := ioutil.WriteFile("/tmp/"+params["name"], c, 0777); fErr != nil {
+			// 	log.Fatal(fErr)
+			// }
+		}
+	}
+
+	return nil, errors.New("Not found attachment")
+
+}
+
 // view message by sid
 func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
 	mbox, err := mr.Cl.Select("INBOX", false)
@@ -62,7 +133,7 @@ func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- mr.Cl.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchBodyStructure, imap.FetchUid}, messages)
+		done <- mr.Cl.UidFetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchBodyStructure, imap.FetchUid}, messages)
 	}()
 
 	msg := <-messages
@@ -81,6 +152,7 @@ func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
 	}
 
 	attachments := []MailAttachmentDto{}
+	i := 0
 	for _, part := range msg.BodyStructure.Parts {
 		fname, err := part.Filename()
 		if err != nil || len(fname) == 0 {
@@ -88,9 +160,11 @@ func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
 		}
 
 		attachments = append(attachments, MailAttachmentDto{
-			Mime: part.MIMEType + "/" + part.MIMESubType,
-			Name: fname,
+			Mime:  part.MIMEType + "/" + part.MIMESubType,
+			Name:  fname,
+			Index: i,
 		})
+		i++
 	}
 
 	mailDto.Attachments = attachments

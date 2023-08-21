@@ -47,7 +47,8 @@ func main() {
 
 	//Routes
 	e.GET("/list", listController.GetList)
-	e.GET("/view/:sid", listController.GetView)
+	e.GET("/view/:uid", listController.GetView)
+	e.POST("/download/:uid", listController.DownloadAttachment)
 
 	// Start server
 	s := &http.Server{

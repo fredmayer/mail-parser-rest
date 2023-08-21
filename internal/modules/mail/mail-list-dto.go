@@ -13,8 +13,9 @@ type MailDto struct {
 }
 
 type MailAttachmentDto struct {
-	Mime string
-	Name string
+	Mime  string
+	Name  string
+	Index int
 }
 
 type ListMailResponse struct {
