@@ -22,6 +22,10 @@ func NewMailService() *MailService {
 	}
 }
 
+func (ms *MailService) MailBoxes() ([]string, error) {
+	return ms.mail.MailBoxes()
+}
+
 func (ms *MailService) DownloadAttachment(uid int, params types.AttachmentRequest, cxt echo.Context) (io.Reader, error) {
 	reader, err := ms.mail.DownloadAttachment(uid, params.Mime, params.Name)
 	if err != nil {

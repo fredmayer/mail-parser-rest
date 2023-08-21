@@ -46,6 +46,26 @@ func Get() *MailReader {
 	return &mc
 }
 
+func (mr *MailReader) MailBoxes() ([]string, error) {
+	// List mailboxes
+	mailboxes := make(chan *imap.MailboxInfo, 10)
+	done := make(chan error, 1)
+	go func() {
+		done <- mr.Cl.List("", "*", mailboxes)
+	}()
+
+	res := make([]string, 0, 10)
+	for m := range mailboxes {
+		res = append(res, m.Name)
+	}
+
+	if err := <-done; err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (mr *MailReader) DownloadAttachment(uid int, mime string, name string) (io.Reader, error) {
 	mbox, err := mr.Cl.Select("INBOX", false)
 	if err != nil {

@@ -46,7 +46,9 @@ func main() {
 	listController := controller.NewListController(ctx, serviceManager)
 
 	//Routes
+	e.GET("/mailboxes", listController.GetMailBoxes)
 	e.GET("/list", listController.GetList)
+
 	e.GET("/view/:uid", listController.GetView)
 	e.POST("/download/:uid", listController.DownloadAttachment)
 

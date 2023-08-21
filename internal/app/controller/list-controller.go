@@ -58,6 +58,16 @@ func (lc *ListController) GetView(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
+func (lc *ListController) GetMailBoxes(ctx echo.Context) error {
+
+	res, err := lc.service.MailService.MailBoxes()
+	if err != nil {
+		echo.NewHTTPError(http.StatusNotFound, err)
+	}
+
+	return ctx.JSON(http.StatusOK, res)
+}
+
 func (lc *ListController) DownloadAttachment(ctx echo.Context) error {
 	var params types.AttachmentRequest
 	err := ctx.Bind(&params)
@@ -78,8 +88,6 @@ func (lc *ListController) DownloadAttachment(ctx echo.Context) error {
 	}
 
 	ctx.Response().Writer.Header().Set("Content-Disposition", "attachment; filename="+params.Name)
-	//w.Header().Set("Content-Disposition", "attachment; filename=WHATEVER_YOU_WANT")
-	//w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
 
 	return ctx.Stream(http.StatusOK, params.Mime, reader)
 }
