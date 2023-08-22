@@ -43,14 +43,17 @@ func main() {
 	}
 
 	//Controllers
-	listController := controller.NewListController(ctx, serviceManager)
+	MessageController := controller.NewMessageController(ctx, serviceManager)
+	MailBoxController := controller.NewMailBoxController(ctx, serviceManager)
 
 	//Routes
-	e.GET("/mailboxes", listController.GetMailBoxes)
-	e.GET("/list", listController.GetList)
+	m := e.Group("/messages")
+	m.GET("/list", MessageController.GetList)
+	m.GET("/:uid", MessageController.GetView)
+	m.GET("/download/:uid", MessageController.DownloadAttachment)
 
-	e.GET("/view/:uid", listController.GetView)
-	e.POST("/download/:uid", listController.DownloadAttachment)
+	mls := e.Group("/mails")
+	mls.GET("/list", MailBoxController.GetList)
 
 	// Start server
 	s := &http.Server{

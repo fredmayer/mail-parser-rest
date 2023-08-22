@@ -1,12 +1,11 @@
 package service
 
 import (
-	"io"
+	"errors"
 	"strconv"
 
 	"github.com/VictorRibeiroLima/converter"
 	"github.com/fredmayer/mail-parser-rest/internal/app/models"
-	"github.com/fredmayer/mail-parser-rest/internal/app/types"
 	"github.com/fredmayer/mail-parser-rest/internal/modules/mail"
 	"github.com/labstack/echo/v4"
 )
@@ -26,13 +25,25 @@ func (ms *MailService) MailBoxes() ([]string, error) {
 	return ms.mail.MailBoxes()
 }
 
-func (ms *MailService) DownloadAttachment(uid int, params types.AttachmentRequest, cxt echo.Context) (io.Reader, error) {
-	reader, err := ms.mail.DownloadAttachment(uid, params.Mime, params.Name)
+func (ms *MailService) DownloadAttachment(uid int, index int, cxt echo.Context) (*mail.MailAttachmentDto, error) {
+	message, err := ms.mail.GetBySid(uid)
 	if err != nil {
 		return nil, err
 	}
 
-	return reader, err
+	if len(message.Attachments) <= index {
+		return nil, errors.New("Not found attachment")
+	}
+	at := message.Attachments[index]
+
+	reader, err := ms.mail.DownloadAttachment(uid, at.Mime, at.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	at.SetReader(reader)
+
+	return &at, err
 }
 
 func (ms *MailService) GetView(uid int, ctx echo.Context) (*models.MailModel, error) {

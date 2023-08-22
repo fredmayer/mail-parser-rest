@@ -11,20 +11,20 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type ListController struct {
+type MessageController struct {
 	ctx     context.Context
 	service *service.Manager
 	//todo add service inject
 }
 
-func NewListController(ctx context.Context, service *service.Manager) *ListController {
-	return &ListController{
+func NewMessageController(ctx context.Context, service *service.Manager) *MessageController {
+	return &MessageController{
 		ctx:     ctx,
 		service: service,
 	}
 }
 
-func (lc *ListController) GetList(ctx echo.Context) error {
+func (lc *MessageController) GetList(ctx echo.Context) error {
 	var rq types.PageRequest
 	err := ctx.Bind(&rq)
 	//page, err := strconv.Atoi(ctx.QueryParam("page"))
@@ -41,7 +41,7 @@ func (lc *ListController) GetList(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (lc *ListController) GetView(ctx echo.Context) error {
+func (lc *MessageController) GetView(ctx echo.Context) error {
 	uidStr := ctx.Param("uid")
 	uid, err := strconv.Atoi(uidStr)
 	if err != nil {
@@ -58,7 +58,7 @@ func (lc *ListController) GetView(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (lc *ListController) GetMailBoxes(ctx echo.Context) error {
+func (lc *MessageController) GetMailBoxes(ctx echo.Context) error {
 
 	res, err := lc.service.MailService.MailBoxes()
 	if err != nil {
@@ -68,11 +68,12 @@ func (lc *ListController) GetMailBoxes(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (lc *ListController) DownloadAttachment(ctx echo.Context) error {
-	var params types.AttachmentRequest
-	err := ctx.Bind(&params)
+func (lc *MessageController) DownloadAttachment(ctx echo.Context) error {
+	indexStr := ctx.QueryParam("index")
+	index, err := strconv.Atoi(indexStr)
 	if err != nil {
-		return ctx.String(http.StatusBadRequest, "bad request")
+		log.Printf("error - %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	uidStr := ctx.Param("uid")
@@ -82,12 +83,12 @@ func (lc *ListController) DownloadAttachment(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	reader, err := lc.service.MailService.DownloadAttachment(uid, params, ctx)
+	res, err := lc.service.MailService.DownloadAttachment(uid, index, ctx)
 	if err != nil {
-		echo.NewHTTPError(http.StatusNotFound, err)
+		return echo.NewHTTPError(http.StatusNotFound, err)
 	}
 
-	ctx.Response().Writer.Header().Set("Content-Disposition", "attachment; filename="+params.Name)
+	ctx.Response().Writer.Header().Set("Content-Disposition", "attachment; filename="+res.Name)
 
-	return ctx.Stream(http.StatusOK, params.Mime, reader)
+	return ctx.Stream(http.StatusOK, res.Mime, res.GetReader())
 }
