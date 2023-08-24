@@ -66,7 +66,15 @@ func (mr *MailReader) MailBoxes() ([]string, error) {
 	return res, nil
 }
 
+func (mr *MailReader) Move(uid uint32, mailbox string) error {
+	seqset := new(imap.SeqSet)
+	seqset.AddNum(uid)
+
+	return mr.Cl.UidMove(seqset, "LOADED")
+}
+
 func (mr *MailReader) DownloadAttachment(uid int, mime string, name string) (io.Reader, error) {
+	//TODO transfer to another function
 	mbox, err := mr.Cl.Select("INBOX", false)
 	if err != nil {
 		log.Fatal(err)
@@ -108,26 +116,6 @@ func (mr *MailReader) DownloadAttachment(uid int, mime string, name string) (io.
 					return e.Body, nil
 				}
 			}
-
-			log.Printf("Type of %v", kind)
-			log.Printf("Params %v", params)
-
-			//e.Body
-
-			// if kind != "image/png" && kind != "image/gif" {
-			// 	continue
-			// }
-
-			// c, rErr := ioutil.ReadAll(e.Body)
-			// if rErr != nil {
-			// 	log.Fatal(rErr)
-			// }
-
-			// log.Printf("Dump file %s", params["name"])
-
-			// if fErr := ioutil.WriteFile("/tmp/"+params["name"], c, 0777); fErr != nil {
-			// 	log.Fatal(fErr)
-			// }
 		}
 	}
 

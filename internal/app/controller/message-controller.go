@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -58,14 +59,25 @@ func (lc *MessageController) GetView(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (lc *MessageController) GetMailBoxes(ctx echo.Context) error {
-
-	res, err := lc.service.MailService.MailBoxes()
+func (lc *MessageController) Move(ctx echo.Context) error {
+	uidStr := ctx.QueryParam("uid")
+	uid, err := strconv.Atoi(uidStr)
 	if err != nil {
-		echo.NewHTTPError(http.StatusNotFound, err)
+		log.Printf("error - %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return ctx.JSON(http.StatusOK, res)
+	mailbox := ctx.QueryParam("mailbox")
+	if mailbox == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.New("mailbox param is required"))
+	}
+
+	err = lc.service.MailService.Move(uid, mailbox)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, err)
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 func (lc *MessageController) DownloadAttachment(ctx echo.Context) error {

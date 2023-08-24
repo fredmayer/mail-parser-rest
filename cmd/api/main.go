@@ -51,6 +51,7 @@ func main() {
 	m.GET("/list", MessageController.GetList)
 	m.GET("/:uid", MessageController.GetView)
 	m.GET("/download/:uid", MessageController.DownloadAttachment)
+	m.GET("/move", MessageController.Move)
 
 	mls := e.Group("/mails")
 	mls.GET("/list", MailBoxController.GetList)

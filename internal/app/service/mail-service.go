@@ -8,6 +8,7 @@ import (
 	"github.com/fredmayer/mail-parser-rest/internal/app/models"
 	"github.com/fredmayer/mail-parser-rest/internal/modules/mail"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/exp/slices"
 )
 
 type MailService struct {
@@ -23,6 +24,20 @@ func NewMailService() *MailService {
 
 func (ms *MailService) MailBoxes() ([]string, error) {
 	return ms.mail.MailBoxes()
+}
+
+func (ms *MailService) Move(uid int, mailbox string) error {
+	list, err := ms.MailBoxes()
+	if err != nil {
+		return err
+	}
+
+	exist := slices.Contains(list, mailbox)
+	if !exist {
+		return errors.New("Not found " + mailbox + " in mailboxes list")
+	}
+
+	return ms.mail.Move(uint32(uid), mailbox)
 }
 
 func (ms *MailService) DownloadAttachment(uid int, index int, cxt echo.Context) (*mail.MailAttachmentDto, error) {
