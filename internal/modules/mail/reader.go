@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"strconv"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -13,7 +14,8 @@ import (
 )
 
 type MailReader struct {
-	Cl *client.Client
+	Cl            *client.Client
+	CurrentFolder *imap.MailboxStatus
 }
 
 var (
@@ -46,26 +48,6 @@ func Get() *MailReader {
 	return &mc
 }
 
-func (mr *MailReader) MailBoxes() ([]string, error) {
-	// List mailboxes
-	mailboxes := make(chan *imap.MailboxInfo, 10)
-	done := make(chan error, 1)
-	go func() {
-		done <- mr.Cl.List("", "*", mailboxes)
-	}()
-
-	res := make([]string, 0, 10)
-	for m := range mailboxes {
-		res = append(res, m.Name)
-	}
-
-	if err := <-done; err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
 func (mr *MailReader) Move(uid uint32, mailbox string) error {
 	seqset := new(imap.SeqSet)
 	seqset.AddNum(uid)
@@ -74,11 +56,7 @@ func (mr *MailReader) Move(uid uint32, mailbox string) error {
 }
 
 func (mr *MailReader) DownloadAttachment(uid int, mime string, name string) (io.Reader, error) {
-	//TODO transfer to another function
-	mbox, err := mr.Cl.Select("INBOX", false)
-	if err != nil {
-		log.Fatal(err)
-	}
+	mbox := mr.initMailbox()
 	if mbox.Messages == 0 {
 		log.Println("No messages in mailbox")
 		//todo return error
@@ -125,10 +103,7 @@ func (mr *MailReader) DownloadAttachment(uid int, mime string, name string) (io.
 
 // view message by sid
 func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
-	mbox, err := mr.Cl.Select("INBOX", false)
-	if err != nil {
-		log.Fatal(err)
-	}
+	mbox := mr.initMailbox()
 	if mbox.Messages == 0 {
 		log.Println("No messages in mailbox")
 		//return nil
@@ -146,6 +121,9 @@ func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
 
 	msg := <-messages
 
+	if msg == nil {
+		return nil, errors.New("Not found message by uid " + strconv.Itoa(sid))
+	}
 	from, err := mc.getFirstAddress(msg.Envelope.From)
 	if err != nil {
 		from = "not setted"
@@ -191,20 +169,20 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 	if page == 0 {
 		page = 1
 	}
-	mbox, err := mr.Cl.Select("INBOX", false)
-	if err != nil {
-		log.Fatal(err)
-	}
+	mbox := mr.initMailbox()
 
+	r := &ListMailResponse{}
 	if mbox.Messages == 0 {
 		log.Println("No messages in mailbox")
-		//return nil
+		return r, nil
 	}
 	log.Printf("Total messages %v \r\n", mbox.Messages)
 
 	from := uint32((page-1)*perPage + 1)
 	to := uint32(page * perPage)
-	//log.Printf("Page %d from %d to %d", page, from, to)
+	if to > mbox.Messages {
+		to = mbox.Messages
+	}
 
 	messages := make(chan *imap.Message, 10)
 	pages := math.Ceil(float64(mbox.Messages) / float64(perPage))
@@ -243,10 +221,8 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 		log.Fatal(err)
 	}
 
-	r := &ListMailResponse{
-		Data:  res,
-		Pages: int(pages),
-	}
+	r.Data = res
+	r.Pages = int(pages)
 
 	return r, nil
 }
