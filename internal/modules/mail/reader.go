@@ -1,16 +1,21 @@
 package mail
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"math"
+	"mime"
 	"strconv"
+	"strings"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-message"
 	"github.com/fredmayer/mail-parser-rest/internal/configs"
+	"github.com/maxjust/charmap"
 )
 
 type MailReader struct {
@@ -128,12 +133,16 @@ func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
 	if err != nil {
 		from = "not setted"
 	}
+	subject, err := mr.decodeSubject(msg.Envelope.Subject)
+	if err != nil {
+		log.Println("Error:" + err.Error())
+	}
 	mailDto := MailDto{
 		MessageId: msg.Envelope.MessageId,
 		Uid:       msg.Uid,
 		SeqNum:    msg.SeqNum,
 		From:      from,
-		Subject:   msg.Envelope.Subject,
+		Subject:   subject,
 		Date:      msg.Envelope.Date,
 	}
 
@@ -232,4 +241,41 @@ func (mr *MailReader) getFirstAddress(froms []*imap.Address) (string, error) {
 		return "", errors.New("Not found froms e-mail adresses")
 	}
 	return froms[0].Address(), nil
+}
+
+func (mr *MailReader) decodeSubject(s string) (string, error) {
+	if strings.Contains(s, "=?") {
+		preparsed := strings.Trim(s, " \t\r\n")
+
+		dec := new(mime.WordDecoder)
+		dec.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
+			switch charset {
+			case "koi8-r":
+				content, err := io.ReadAll(input)
+				if err != nil {
+					return nil, err
+				}
+
+				return bytes.NewReader(charmap.KOI8R_to_UTF8(content)), nil
+
+			case "windows-1251":
+				content, err := io.ReadAll(input)
+				if err != nil {
+					return nil, err
+				}
+
+				return bytes.NewReader(charmap.CP1251_to_UTF8(content)), nil
+			default:
+				return nil, fmt.Errorf("unhandled charset %q", charset)
+			}
+		}
+
+		res, err := dec.Decode(string(preparsed[:]))
+		//res, err := dec.Decode("79PUwdTLyQ")
+		if err != nil {
+			return s, err
+		}
+		return res, nil
+	}
+	return s, nil
 }

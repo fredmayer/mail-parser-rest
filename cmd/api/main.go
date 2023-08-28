@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/fredmayer/mail-parser-rest/internal/app/service"
 	"github.com/fredmayer/mail-parser-rest/internal/configs"
 	"github.com/fredmayer/mail-parser-rest/internal/modules/mail"
+	"github.com/fredmayer/mail-parser-rest/pkg/logging"
 	"github.com/labstack/echo/v4"
 )
 
@@ -25,11 +25,11 @@ func init() {
 
 func main() {
 	ctx := context.Background()
-	log.Println("Starting...")
 	flag.Parse()
 
 	config := configs.NewConfig(configPath)
-	fmt.Println(config)
+	logging.Init(config.LogLevel)
+	logging.Log().Info("Starting application")
 
 	_ = mail.Dial()
 
@@ -55,6 +55,7 @@ func main() {
 
 	mls := e.Group("/mails")
 	mls.GET("/list", MailBoxController.GetList)
+	mls.PUT("/folder", MailBoxController.SetFolder)
 
 	// Start server
 	s := &http.Server{

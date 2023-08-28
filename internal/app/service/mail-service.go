@@ -22,8 +22,15 @@ func NewMailService() *MailService {
 	}
 }
 
+// List of folders(mailboxes)
 func (ms *MailService) MailBoxes() ([]string, error) {
 	return ms.mail.MailBoxes()
+}
+
+// Устанавливаем папку по-умолчанию
+func (ms *MailService) SetFolder(folder string) error {
+	_, error := ms.mail.SetFolder(folder)
+	return error
 }
 
 func (ms *MailService) Move(uid int, mailbox string) error {

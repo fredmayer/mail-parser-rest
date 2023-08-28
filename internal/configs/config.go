@@ -13,6 +13,8 @@ type Config struct {
 	ImapPort     string `toml:"imap_port"`
 	ImapSsl      bool   `toml:"imap_ssl"`
 	HTTPAddr     string `toml:"http_addr"`
+
+	LogLevel string `toml:"log_level"`
 }
 
 var (
