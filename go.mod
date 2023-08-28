@@ -5,6 +5,12 @@ go 1.19
 require github.com/emersion/go-imap v1.2.1
 
 require (
+	github.com/emersion/go-imap/v2 v2.0.0-alpha.6 // indirect
+	github.com/maxjust/charmap v0.0.0-20151220132847-945fb53710f2 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
+)
+
+require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/VictorRibeiroLima/converter v0.1.3
 	github.com/emersion/go-message v0.16.0
