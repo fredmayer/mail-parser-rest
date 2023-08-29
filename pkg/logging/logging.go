@@ -23,7 +23,8 @@ func Init(level string) {
 	l.SetFormatter(&logrus.TextFormatter{
 		CallerPrettyfier: func(f *runtime.Frame) (function string, file string) {
 			filename := path.Base(f.File)
-			return fmt.Sprintf("%s()", f.Function), fmt.Sprintf("%s:%d", filename, f.Line)
+			//fmt.Sprintf("%s()", f.Func.Name())
+			return "", fmt.Sprintf("%s:%d", filename, f.Line)
 		},
 		DisableColors: false,
 		FullTimestamp: true,

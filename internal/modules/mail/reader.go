@@ -8,13 +8,13 @@ import (
 	"log"
 	"math"
 	"mime"
-	"strconv"
 	"strings"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-message"
 	"github.com/fredmayer/mail-parser-rest/internal/configs"
+	"github.com/fredmayer/mail-parser-rest/pkg/logging"
 	"github.com/maxjust/charmap"
 )
 
@@ -110,7 +110,7 @@ func (mr *MailReader) DownloadAttachment(uid int, mime string, name string) (io.
 func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
 	mbox := mr.initMailbox()
 	if mbox.Messages == 0 {
-		log.Println("No messages in mailbox")
+		return nil, ErrEmptyMailbox
 		//return nil
 	}
 
@@ -127,7 +127,7 @@ func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
 	msg := <-messages
 
 	if msg == nil {
-		return nil, errors.New("Not found message by uid " + strconv.Itoa(sid))
+		return nil, ErrNotFound
 	}
 	from, err := mc.getFirstAddress(msg.Envelope.From)
 	if err != nil {
@@ -135,7 +135,7 @@ func (mr *MailReader) GetBySid(sid int) (*MailDto, error) {
 	}
 	subject, err := mr.decodeSubject(msg.Envelope.Subject)
 	if err != nil {
-		log.Println("Error:" + err.Error())
+		subject = msg.Envelope.Subject
 	}
 	mailDto := MailDto{
 		MessageId: msg.Envelope.MessageId,
@@ -182,10 +182,11 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 
 	r := &ListMailResponse{}
 	if mbox.Messages == 0 {
-		log.Println("No messages in mailbox")
+		logging.Log().Warn(ErrEmptyMailbox)
+		//log.Println("No messages in mailbox")
 		return r, nil
 	}
-	log.Printf("Total messages %v \r\n", mbox.Messages)
+	logging.Log().Debugf("total messages %v", mbox.Messages)
 
 	from := uint32((page-1)*perPage + 1)
 	to := uint32(page * perPage)
@@ -197,7 +198,7 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 	pages := math.Ceil(float64(mbox.Messages) / float64(perPage))
 
 	if page > int(pages) {
-		return nil, errors.New("Not found")
+		return nil, ErrNotFound
 	}
 
 	seqset := new(imap.SeqSet)
@@ -210,16 +211,25 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 
 	res := make([]MailDto, 0, 10)
 	for msg := range messages {
-		from, err := mc.getFirstAddress(msg.Envelope.From)
-		if err != nil {
-			from = "not setted"
+		emailFrom := "not setted"
+		if msg.Envelope.From != nil {
+			ef, err := mc.getFirstAddress(msg.Envelope.From)
+			if err == nil {
+				emailFrom = ef
+			}
 		}
+
 		//log.Println(msg.Uid)
+
+		subject, err := mr.decodeSubject(msg.Envelope.Subject)
+		if err != nil {
+			subject = msg.Envelope.Subject
+		}
 
 		res = append(res, MailDto{
 			MessageId: msg.Envelope.MessageId,
-			From:      from,
-			Subject:   msg.Envelope.Subject,
+			From:      emailFrom,
+			Subject:   subject,
 			Date:      msg.Envelope.Date,
 			Uid:       msg.Uid,
 			SeqNum:    msg.SeqNum,
@@ -227,7 +237,7 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 	}
 
 	if err := <-done; err != nil {
-		log.Fatal(err)
+		logging.Log().Panic(err)
 	}
 
 	r.Data = res
@@ -238,6 +248,7 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 
 func (mr *MailReader) getFirstAddress(froms []*imap.Address) (string, error) {
 	if len(froms) == 0 {
+		logging.Log().Warn("not found \"from\" e-mail address")
 		return "", errors.New("Not found froms e-mail adresses")
 	}
 	return froms[0].Address(), nil
@@ -266,6 +277,7 @@ func (mr *MailReader) decodeSubject(s string) (string, error) {
 
 				return bytes.NewReader(charmap.CP1251_to_UTF8(content)), nil
 			default:
+				logging.Log().Errorf("unhandled charset %q", charset)
 				return nil, fmt.Errorf("unhandled charset %q", charset)
 			}
 		}
@@ -273,6 +285,7 @@ func (mr *MailReader) decodeSubject(s string) (string, error) {
 		res, err := dec.Decode(string(preparsed[:]))
 		//res, err := dec.Decode("79PUwdTLyQ")
 		if err != nil {
+			logging.Log().Error(err)
 			return s, err
 		}
 		return res, nil

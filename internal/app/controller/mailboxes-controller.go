@@ -6,7 +6,9 @@ import (
 
 	"github.com/fredmayer/mail-parser-rest/internal/app/service"
 	"github.com/fredmayer/mail-parser-rest/internal/app/types"
+	"github.com/fredmayer/mail-parser-rest/pkg/logging"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
 type MailBoxController struct {
@@ -25,9 +27,10 @@ func NewMailBoxController(ctx context.Context, service *service.Manager) *MailBo
 func (mb *MailBoxController) GetList(ctx echo.Context) error {
 	res, err := mb.service.MailService.MailBoxes()
 	if err != nil {
-		echo.NewHTTPError(http.StatusNotFound, err)
+		return notFoundError(ctx.Path(), err, logrus.Fields{})
 	}
 
+	logging.Log().Debug(ctx.Path())
 	return ctx.JSON(http.StatusOK, res)
 }
 
@@ -35,13 +38,14 @@ func (mb *MailBoxController) SetFolder(ctx echo.Context) error {
 	var req types.FolderRequest
 	err := ctx.Bind(&req)
 	if err != nil {
-		return ctx.String(http.StatusBadRequest, "bad request")
+		return badRequestError(ctx.Path(), err, logrus.Fields{})
 	}
 
 	err = mb.service.MailService.SetFolder(req.Folder)
 	if err != nil {
-		return ctx.String(http.StatusNotFound, "not setted")
+		return notFoundError(ctx.Path(), err, logrus.Fields{})
 	}
 
+	logging.Log().Debug(ctx.Path())
 	return ctx.NoContent(http.StatusCreated)
 }
