@@ -1,6 +1,6 @@
 # What is this repository for? 
 
-This is a REST API microservice of the mail client. To automate the receipt of data through mail attachments. For example: you are sent price lists by email with attached price lists and you need to parse the attachments.
+This is a REST API microservice of the mail client. To automate the receipt of data through mail attachments. For example: you are sent price lists by email with attached file and you need to parse the attachments data.
 
 This microservice based on high performance, extensible, minimalist Go web framework [Echo](https://echo.labstack.com/), IMAP client [go-imap](https://github.com/emersion/go-imap). For logging i`m use [Logrus](https://github.com/sirupsen/logrus)
 
