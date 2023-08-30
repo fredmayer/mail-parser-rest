@@ -49,6 +49,7 @@ func main() {
 	//Routes
 	m := e.Group("/messages")
 	m.GET("/list", MessageController.GetList)
+	m.GET("/last", MessageController.GetLast)
 	m.GET("/:uid", MessageController.GetView)
 	m.GET("/download/:uid", MessageController.DownloadAttachment)
 	m.GET("/move", MessageController.Move)

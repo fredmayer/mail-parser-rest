@@ -112,3 +112,28 @@ func (ms *MailService) GetList(page int, ctx echo.Context) ([]models.MailModel, 
 
 	return items, nil
 }
+
+func (ms *MailService) GetLast(count int, ctx echo.Context) ([]models.MailModel, error) {
+	if count > 200 { //max count 200
+		count = 200
+	}
+
+	res, err := ms.mail.Last(count)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []models.MailModel
+	for _, row := range res.Data {
+		items = append(items, models.MailModel{
+			MessageId: row.MessageId,
+			Uid:       row.Uid,
+			SeqNum:    row.SeqNum,
+			From:      row.From,
+			Subject:   row.Subject,
+			Date:      row.Date,
+		})
+	}
+
+	return items, nil
+}

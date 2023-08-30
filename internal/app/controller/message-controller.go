@@ -48,6 +48,31 @@ func (lc *MessageController) GetList(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
+func (lc *MessageController) GetLast(ctx echo.Context) error {
+	countStr := ctx.QueryParam("count")
+	count := 100
+	err := errors.New("dummy")
+	if countStr != "" {
+		if count, err = strconv.Atoi(countStr); err != nil {
+			return badRequestError(ctx.Path(), err, logrus.Fields{
+				"count": countStr,
+			})
+		}
+	}
+
+	res, err := lc.service.MailService.GetLast(count, ctx)
+	if err != nil {
+		if errors.Is(err, mail.ErrNotFound) {
+			return notFoundError(ctx.Path(), err, logrus.Fields{})
+		}
+		logging.Log().Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	logging.Log().Debug(ctx.Path())
+	return ctx.JSON(http.StatusOK, res)
+}
+
 func (lc *MessageController) GetView(ctx echo.Context) error {
 	uidStr := ctx.Param("uid")
 	uid, err := strconv.Atoi(uidStr)

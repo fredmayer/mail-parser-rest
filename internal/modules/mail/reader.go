@@ -8,7 +8,7 @@ import (
 	"log"
 	"math"
 	"mime"
-	"strings"
+	"regexp"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -209,6 +209,63 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 		done <- mr.Cl.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchUid}, messages)
 	}()
 
+	res, err := mr.fillCollection(messages)
+	if err != nil {
+		logging.Log().Error(err)
+	}
+
+	if err := <-done; err != nil {
+		logging.Log().Panic(err)
+	}
+
+	r.Data = res
+	r.Pages = int(pages)
+
+	return r, nil
+}
+
+func (mr *MailReader) Last(count int) (*ListMailResponse, error) {
+	mbox := mr.initMailbox()
+
+	r := &ListMailResponse{}
+	if mbox.Messages == 0 {
+		logging.Log().Warn(ErrEmptyMailbox)
+		//log.Println("No messages in mailbox")
+		return r, nil
+	}
+	logging.Log().Debugf("total messages %v", mbox.Messages)
+
+	from := mbox.Messages
+	to := from - uint32(count)
+
+	seqset := new(imap.SeqSet)
+	seqset.AddRange(from, to)
+
+	done := make(chan error, 1)
+	messages := make(chan *imap.Message, 10)
+	go func() {
+		done <- mr.Cl.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchUid}, messages)
+	}()
+
+	res, err := mr.fillCollection(messages)
+	if err != nil {
+		logging.Log().Error(err)
+	}
+
+	if err := <-done; err != nil {
+		logging.Log().Panic(err)
+	}
+
+	r.Data = res
+	r.Pages = 0
+
+	return r, nil
+}
+
+/**
+* 	Fill collection messages array
+ */
+func (mr *MailReader) fillCollection(messages chan *imap.Message) ([]MailDto, error) {
 	res := make([]MailDto, 0, 10)
 	for msg := range messages {
 		emailFrom := "not setted"
@@ -218,8 +275,6 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 				emailFrom = ef
 			}
 		}
-
-		//log.Println(msg.Uid)
 
 		subject, err := mr.decodeSubject(msg.Envelope.Subject)
 		if err != nil {
@@ -236,14 +291,7 @@ func (mr *MailReader) List(page int) (*ListMailResponse, error) {
 		})
 	}
 
-	if err := <-done; err != nil {
-		logging.Log().Panic(err)
-	}
-
-	r.Data = res
-	r.Pages = int(pages)
-
-	return r, nil
+	return res, nil
 }
 
 func (mr *MailReader) getFirstAddress(froms []*imap.Address) (string, error) {
@@ -255,40 +303,65 @@ func (mr *MailReader) getFirstAddress(froms []*imap.Address) (string, error) {
 }
 
 func (mr *MailReader) decodeSubject(s string) (string, error) {
-	if strings.Contains(s, "=?") {
-		preparsed := strings.Trim(s, " \t\r\n")
+	re := regexp.MustCompile(`=\?\w*\d?[-]?\w?\d{0,4}\?B\?.*==\?=`)
 
-		dec := new(mime.WordDecoder)
-		dec.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
-			switch charset {
-			case "koi8-r":
-				content, err := io.ReadAll(input)
-				if err != nil {
-					return nil, err
-				}
-
-				return bytes.NewReader(charmap.KOI8R_to_UTF8(content)), nil
-
-			case "windows-1251":
-				content, err := io.ReadAll(input)
-				if err != nil {
-					return nil, err
-				}
-
-				return bytes.NewReader(charmap.CP1251_to_UTF8(content)), nil
-			default:
-				logging.Log().Errorf("unhandled charset %q", charset)
-				return nil, fmt.Errorf("unhandled charset %q", charset)
+	matches := re.FindAllString(s, -1)
+	if len(matches) > 0 {
+		var decodeMatches []string
+		for _, ms := range matches {
+			//decode str
+			res, err := mr.decodeString(ms)
+			if err == nil {
+				decodeMatches = append(decodeMatches, res)
 			}
 		}
 
-		res, err := dec.Decode(string(preparsed[:]))
-		//res, err := dec.Decode("79PUwdTLyQ")
-		if err != nil {
-			logging.Log().Error(err)
-			return s, err
+		if len(decodeMatches) > 0 {
+			var rs string
+			for i, d := range decodeMatches {
+				rs += fmt.Sprintf("${%d}%v", i+1, d)
+			}
+
+			res := re.ReplaceAll([]byte(s), []byte(rs))
+
+			return string(res[:]), nil
 		}
-		return res, nil
 	}
+
 	return s, nil
+}
+
+func (mr *MailReader) decodeString(s string) (string, error) {
+
+	dec := new(mime.WordDecoder)
+	dec.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
+		switch charset {
+		case "koi8-r":
+			content, err := io.ReadAll(input)
+			if err != nil {
+				return nil, err
+			}
+
+			return bytes.NewReader(charmap.KOI8R_to_UTF8(content)), nil
+
+		case "windows-1251":
+			content, err := io.ReadAll(input)
+			if err != nil {
+				return nil, err
+			}
+
+			return bytes.NewReader(charmap.CP1251_to_UTF8(content)), nil
+		default:
+			logging.Log().Errorf("unhandled charset %q", charset)
+			return nil, fmt.Errorf("unhandled charset %q", charset)
+		}
+	}
+
+	res, err := dec.Decode(string(s[:]))
+	//res, err := dec.Decode("79PUwdTLyQ")
+	if err != nil {
+		logging.Log().Error(err)
+		return s, err
+	}
+	return res, nil
 }
