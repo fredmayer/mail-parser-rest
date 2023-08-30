@@ -6,6 +6,7 @@ require github.com/emersion/go-imap v1.2.1
 
 require (
 	github.com/emersion/go-imap/v2 v2.0.0-alpha.6 // indirect
+	github.com/famz/RFC2047 v0.0.0-20131226024255-e1d02d2ab7f9 // indirect
 	github.com/maxjust/charmap v0.0.0-20151220132847-945fb53710f2 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 )

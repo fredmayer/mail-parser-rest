@@ -330,6 +330,7 @@ func (mr *MailReader) decodeSubject(s string) (string, error) {
 		}
 	}
 
+	//for window-1251 encoding
 	if strings.Contains(s, "=?") {
 		//fmt.Println(s)
 		//s = RFC2047.Decode(s)
