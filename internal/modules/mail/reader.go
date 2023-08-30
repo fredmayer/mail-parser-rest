@@ -9,6 +9,7 @@ import (
 	"math"
 	"mime"
 	"regexp"
+	"strings"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -303,7 +304,8 @@ func (mr *MailReader) getFirstAddress(froms []*imap.Address) (string, error) {
 }
 
 func (mr *MailReader) decodeSubject(s string) (string, error) {
-	re := regexp.MustCompile(`=\?\w*\d?[-]?\w?\d{0,4}\?B\?.*==\?=`)
+	// smple regexp = =\?\w*\d?\W?\w?\d{0,4}\?B\?.*=*\?=
+	re := regexp.MustCompile(`=\?\w*\d?\W?\w?\d{0,4}\?B\?(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?\?=`)
 
 	matches := re.FindAllString(s, -1)
 	if len(matches) > 0 {
@@ -326,6 +328,16 @@ func (mr *MailReader) decodeSubject(s string) (string, error) {
 
 			return string(res[:]), nil
 		}
+	}
+
+	if strings.Contains(s, "=?") {
+		//fmt.Println(s)
+		//s = RFC2047.Decode(s)
+		res, err := mr.decodeString(s)
+		if err != nil {
+			logging.Log().Error(err)
+		}
+		s = res
 	}
 
 	return s, nil
@@ -360,7 +372,7 @@ func (mr *MailReader) decodeString(s string) (string, error) {
 	res, err := dec.Decode(string(s[:]))
 	//res, err := dec.Decode("79PUwdTLyQ")
 	if err != nil {
-		logging.Log().Error(err)
+		logging.Log().WithField("string", s).Error(err)
 		return s, err
 	}
 	return res, nil
