@@ -1,0 +1,218 @@
+{
+	"info": {
+		"_postman_id": "75295b7f-0364-4eb7-b92a-3ccd5f1981c6",
+		"name": "mail-parser-rest",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "4176183"
+	},
+	"item": [
+		{
+			"name": "List messages",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:1323/messages/list",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "1323",
+					"path": [
+						"messages",
+						"list"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "404",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Last messages",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:1323/messages/last",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "1323",
+					"path": [
+						"messages",
+						"last"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "404",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "View message",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:1323/messages/40016",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "1323",
+					"path": [
+						"messages",
+						"40016"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Move message",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:1323/messages/move?uid=37178&mailbox=LOADED",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "1323",
+					"path": [
+						"messages",
+						"move"
+					],
+					"query": [
+						{
+							"key": "uid",
+							"value": "37178"
+						},
+						{
+							"key": "mailbox",
+							"value": "LOADED"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Download Attachment",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:1323/messages/download/37175?index=0",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "1323",
+					"path": [
+						"messages",
+						"download",
+						"37175"
+					],
+					"query": [
+						{
+							"key": "index",
+							"value": "0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Mailboxes List",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:1323/mails/list",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "1323",
+					"path": [
+						"mails",
+						"list"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Set mailbox (folder)",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"folder\":\"LOADED\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:1323/mails/folder",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "1323",
+					"path": [
+						"mails",
+						"folder"
+					],
+					"query": [
+						{
+							"key": "mailbox",
+							"value": null,
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

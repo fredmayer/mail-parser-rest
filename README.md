@@ -17,7 +17,7 @@ The entire configuration is in a file `config.toml`
 
 ## Build
 
-Before, you need a build programm or use a docker (See the corresponding section).
+Before, you need a build programm or use a docker (be release later).
 
     make build
 
@@ -25,14 +25,14 @@ The programm has been build `app` application.
 
 ## Usage
 
-The following REST API is used:
-
 > [!NOTE]
 > The following logic should be implemented in your application:
-> 1. We read the messages in order and check for the from field, subject and attachment name
+> 1. Read the messages in order and check for the from field, subject and attachment name
 > 2. If the message suits us, then we get an attachment (blob)
 > 3. Transfer the letter to one of the folders (LOADED|ERRORS). Well done!
 > 4. Repeat
+
+The following REST API is used:
 
 ### Manage mailboxes (folders)
 
