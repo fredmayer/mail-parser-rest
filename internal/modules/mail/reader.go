@@ -99,6 +99,10 @@ func (mr *MailReader) DownloadAttachment(uid int, mime string, name string) (io.
 				if kind == mime && nameAt == name {
 					return e.Body, nil
 				}
+			} else {
+				if kind == mime {
+					return e.Body, nil
+				}
 			}
 		}
 	}
